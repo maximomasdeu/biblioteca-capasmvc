@@ -16,7 +16,8 @@ export default function Tabla({ rows = [], extraActions }) {
     )
   }
   
-  const headers = Object.keys(rows[0])
+  // Filtramos campos que empiezan con _ (campos internos)
+  const headers = Object.keys(rows[0]).filter(key => !key.startsWith('_'))
   
   const formatHeader = (header) => {
     return header

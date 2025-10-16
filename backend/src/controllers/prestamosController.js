@@ -1,7 +1,22 @@
 import { pool } from '../db/conexion.js'
 
 export async function listarPrestamos(req, res) {
-  const { rows } = await pool.query('SELECT * FROM prestamos ORDER BY id DESC')
+  const { rows } = await pool.query(`
+    SELECT 
+      p.id,
+      p.socio_id,
+      p.libro_id,
+      p.fecha_inicio,
+      p.fecha_devolucion,
+      p.devuelto,
+      s.nombre as socio_nombre,
+      l.titulo as libro_titulo,
+      l.autor as libro_autor
+    FROM prestamos p
+    INNER JOIN socios s ON p.socio_id = s.id
+    INNER JOIN libros l ON p.libro_id = l.id
+    ORDER BY p.id DESC
+  `)
   res.json(rows)
 }
 

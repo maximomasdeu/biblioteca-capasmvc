@@ -5,13 +5,39 @@ import Boton from '../components/Boton'
 
 export default function Prestamos() {
   const [prestamos, setPrestamos] = useState([])
+  const [socios, setSocios] = useState([])
+  const [libros, setLibros] = useState([])
   const [form, setForm] = useState({ socio_id: '', libro_id: '', fecha_inicio: '', fecha_devolucion: '' })
+
+  const formatearFecha = (fecha) => {
+    if (!fecha) return ''
+    const date = new Date(fecha)
+    const dia = String(date.getDate()).padStart(2, '0')
+    const mes = String(date.getMonth() + 1).padStart(2, '0')
+    const año = date.getFullYear()
+    return `${dia}/${mes}/${año}`
+  }
 
   const cargar = async () => {
     const { data } = await api.get('/prestamos')
     setPrestamos(data)
   }
-  useEffect(() => { cargar() }, [])
+
+  const cargarSocios = async () => {
+    const { data } = await api.get('/socios')
+    setSocios(data)
+  }
+
+  const cargarLibros = async () => {
+    const { data } = await api.get('/libros')
+    setLibros(data.filter(l => l.estado === 'disponible'))
+  }
+
+  useEffect(() => { 
+    cargar()
+    cargarSocios()
+    cargarLibros()
+  }, [])
 
   const crear = async () => {
     if (!form.socio_id || !form.libro_id || !form.fecha_inicio || !form.fecha_devolucion) {
@@ -22,6 +48,7 @@ export default function Prestamos() {
       await api.post('/prestamos', form)
       setForm({ socio_id: '', libro_id: '', fecha_inicio: '', fecha_devolucion: '' })
       cargar()
+      cargarLibros() // Actualiza la lista de libros disponibles
     } catch (e) {
       alert('❌ ' + (e?.response?.data?.error || 'Error al crear préstamo'))
     }
@@ -32,6 +59,7 @@ export default function Prestamos() {
       try {
         await api.post(`/prestamos/${id}/devolver`)
         cargar()
+        cargarLibros() // Actualiza la lista de libros disponibles
       } catch (e) {
         alert('❌ Error al registrar devolución')
       }
@@ -76,20 +104,56 @@ export default function Prestamos() {
           gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
           gap: '12px'
         }}>
-          <input
-            type="number"
-            placeholder="ID del Socio"
-            value={form.socio_id}
-            onChange={e=>setForm({...form, socio_id:e.target.value})}
-            style={{ width: '100%' }}
-          />
-          <input
-            type="number"
-            placeholder="ID del Libro"
-            value={form.libro_id}
-            onChange={e=>setForm({...form, libro_id:e.target.value})}
-            style={{ width: '100%' }}
-          />
+          <div>
+            <label style={{ fontSize: '12px', color: '#718096', display: 'block', marginBottom: '4px' }}>
+              Socio
+            </label>
+            <select
+              value={form.socio_id}
+              onChange={e=>setForm({...form, socio_id:e.target.value})}
+              style={{ 
+                width: '100%',
+                padding: '10px 14px',
+                border: '2px solid #e0e0e0',
+                borderRadius: '8px',
+                fontSize: '14px',
+                background: 'white',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="">Seleccionar socio</option>
+              {socios.map(s => (
+                <option key={s.id} value={s.id}>
+                  {s.nombre} (DNI: {s.dni})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label style={{ fontSize: '12px', color: '#718096', display: 'block', marginBottom: '4px' }}>
+              Libro
+            </label>
+            <select
+              value={form.libro_id}
+              onChange={e=>setForm({...form, libro_id:e.target.value})}
+              style={{ 
+                width: '100%',
+                padding: '10px 14px',
+                border: '2px solid #e0e0e0',
+                borderRadius: '8px',
+                fontSize: '14px',
+                background: 'white',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="">Seleccionar libro</option>
+              {libros.map(l => (
+                <option key={l.id} value={l.id}>
+                  {l.titulo} - {l.autor}
+                </option>
+              ))}
+            </select>
+          </div>
           <div>
             <label style={{ fontSize: '12px', color: '#718096', display: 'block', marginBottom: '4px' }}>
               Fecha de Inicio
@@ -119,11 +183,22 @@ export default function Prestamos() {
       </div>
 
       <Tabla 
-        rows={prestamos} 
+        rows={prestamos.map(p => ({
+          id: p.id,
+          socio_id: p.socio_id,
+          socio_nombre: p.socio_nombre,
+          libro_id: p.libro_id,
+          libro_titulo: p.libro_titulo,
+          libro_autor: p.libro_autor,
+          fecha_inicio: formatearFecha(p.fecha_inicio),
+          fecha_devolucion: formatearFecha(p.fecha_devolucion),
+          estado: p.devuelto ? '✓ Devuelto' : '⏳ Pendiente',
+          _original: p // Guardamos el objeto original para acciones
+        }))} 
         extraActions={(row)=>(
-          !row.devuelto ? (
+          !row._original.devuelto ? (
             <Boton 
-              onClick={()=>devolver(row.id)} 
+              onClick={()=>devolver(row._original.id)} 
               variant="secondary"
             >
               ↩️ Devolver
