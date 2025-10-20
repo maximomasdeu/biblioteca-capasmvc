@@ -21,5 +21,7 @@ CREATE TABLE IF NOT EXISTS prestamos (
   fecha_inicio DATE NOT NULL,
   fecha_devolucion DATE NOT NULL,
   devuelto BOOLEAN NOT NULL DEFAULT false,
+  multa INTEGER DEFAULT 0,
+  mal_estado BOOLEAN DEFAULT false,
   CONSTRAINT un_libro_prestamo_activo UNIQUE (libro_id) DEFERRABLE INITIALLY DEFERRED
 );

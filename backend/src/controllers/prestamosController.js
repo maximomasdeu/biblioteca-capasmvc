@@ -9,6 +9,8 @@ export async function listarPrestamos(req, res) {
       p.fecha_inicio,
       p.fecha_devolucion,
       p.devuelto,
+      p.multa,
+      p.mal_estado,
       s.nombre as socio_nombre,
       l.titulo as libro_titulo,
       l.autor as libro_autor
@@ -51,6 +53,7 @@ export async function crearPrestamo(req, res) {
 
 export async function devolverPrestamo(req, res) {
   const id = req.params.id
+  const { mal_estado } = req.body // Espera un booleano
   try {
     await pool.query('BEGIN')
     const { rows } = await pool.query('SELECT * FROM prestamos WHERE id=$1 FOR UPDATE', [id])
@@ -63,10 +66,22 @@ export async function devolverPrestamo(req, res) {
       await pool.query('ROLLBACK')
       return res.status(409).json({ error: 'El préstamo ya fue devuelto' })
     }
-    await pool.query('UPDATE prestamos SET devuelto=true WHERE id=$1', [id])
+    // Calcular multa
+    let multa = 0
+    const hoy = new Date()
+    const fechaDevolucion = new Date(prestamo.fecha_devolucion)
+    const devolucionTarde = hoy > fechaDevolucion
+    if (devolucionTarde && mal_estado) {
+      multa = 7500
+    } else if (devolucionTarde) {
+      multa = 2500
+    } else if (mal_estado) {
+      multa = 5000
+    }
+    await pool.query('UPDATE prestamos SET devuelto=true, multa=$1, mal_estado=$2 WHERE id=$3', [multa, !!mal_estado, id])
     await pool.query('UPDATE libros SET estado=$1 WHERE id=$2', ['disponible', prestamo.libro_id])
     await pool.query('COMMIT')
-    res.json({ ok: true })
+    res.json({ ok: true, multa })
   } catch (e) {
     await pool.query('ROLLBACK')
     res.status(500).json({ error: e.message })

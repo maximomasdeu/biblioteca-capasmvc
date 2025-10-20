@@ -54,10 +54,13 @@ export default function Prestamos() {
     }
   }
 
+  const [devolucionMalEstado, setDevolucionMalEstado] = useState({})
   const devolver = async (id) => {
-    if (confirm('¿Confirmar la devolución de este libro?')) {
+    let malEstado = devolucionMalEstado[id] || false
+    if (window.confirm('¿Confirmar la devolución de este libro?' + (malEstado ? '\nSe marcará como mal estado físico.' : ''))) {
       try {
-        await api.post(`/prestamos/${id}/devolver`)
+        await api.post(`/prestamos/${id}/devolver`, { mal_estado: malEstado })
+        setDevolucionMalEstado({ ...devolucionMalEstado, [id]: false })
         cargar()
         cargarLibros() // Actualiza la lista de libros disponibles
       } catch (e) {
@@ -192,17 +195,29 @@ export default function Prestamos() {
           libro_autor: p.libro_autor,
           fecha_inicio: formatearFecha(p.fecha_inicio),
           fecha_devolucion: formatearFecha(p.fecha_devolucion),
+          multa: p.multa ? `$${p.multa}` : '-',
           estado: p.devuelto ? '✓ Devuelto' : '⏳ Pendiente',
           _original: p // Guardamos el objeto original para acciones
         }))} 
         extraActions={(row)=>(
           !row._original.devuelto ? (
-            <Boton 
-              onClick={()=>devolver(row._original.id)} 
-              variant="secondary"
-            >
-              ↩️ Devolver
-            </Boton>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 12 }}>
+                <input
+                  type="checkbox"
+                  checked={!!devolucionMalEstado[row._original.id]}
+                  onChange={e => setDevolucionMalEstado({ ...devolucionMalEstado, [row._original.id]: e.target.checked })}
+                  style={{ marginRight: 6 }}
+                />
+                Mal estado físico
+              </label>
+              <Boton 
+                onClick={()=>devolver(row._original.id)} 
+                variant="secondary"
+              >
+                ↩️ Devolver
+              </Boton>
+            </div>
           ) : (
             <span style={{
               padding: '6px 12px',
