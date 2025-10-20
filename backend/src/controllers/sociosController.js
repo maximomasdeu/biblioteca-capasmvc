@@ -1,3 +1,12 @@
+export async function eliminarSocio(req, res) {
+  const { id } = req.params
+  try {
+    await pool.query('DELETE FROM socios WHERE id = $1', [id])
+    res.json({ ok: true })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+}
 import { pool } from '../db/conexion.js'
 
 export async function listarSocios(req, res) {

@@ -27,6 +27,17 @@ export default function Socios() {
     }
   }
 
+  const borrar = async (id) => {
+    if (window.confirm('¿Seguro que quieres borrar este socio?')) {
+      try {
+        await api.delete(`/socios/${id}`)
+        cargar()
+      } catch (e) {
+        alert(e?.response?.data?.error || 'No se pudo borrar el socio')
+      }
+    }
+  }
+
   return (
     <div>
       <div style={{
@@ -83,7 +94,14 @@ export default function Socios() {
         </div>
       </div>
 
-      <Tabla rows={socios} />
+      <Tabla 
+        rows={socios}
+        extraActions={row => (
+          <Boton variant="danger" onClick={() => borrar(row.id)}>
+            🗑️ Borrar
+          </Boton>
+        )}
+      />
     </div>
   )
 }

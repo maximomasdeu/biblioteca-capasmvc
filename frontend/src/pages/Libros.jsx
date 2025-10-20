@@ -23,6 +23,17 @@ export default function Libros() {
     cargar()
   }
 
+  const borrar = async (id) => {
+    if (window.confirm('¿Seguro que quieres borrar este libro?')) {
+      try {
+        await api.delete(`/libros/${id}`)
+        cargar()
+      } catch (e) {
+        alert(e?.response?.data?.error || 'No se pudo borrar el libro')
+      }
+    }
+  }
+
   return (
     <div>
       <div style={{
@@ -85,7 +96,14 @@ export default function Libros() {
         </div>
       </div>
 
-      <Tabla rows={libros} />
+      <Tabla 
+        rows={libros}
+        extraActions={row => (
+          <Boton variant="danger" onClick={() => borrar(row.id)}>
+            🗑️ Borrar
+          </Boton>
+        )}
+      />
     </div>
   )
 }

@@ -3,6 +3,61 @@ import { api } from '../services/api'
 import Tabla from '../components/Tabla'
 import Boton from '../components/Boton'
 
+function AutocompleteInput({ items, getLabel, value, onChange, placeholder, idKey }) {
+  const [input, setInput] = React.useState('');
+  const [show, setShow] = React.useState(false);
+  const selected = items.find(i => String(i[idKey]) === String(value));
+  React.useEffect(() => {
+    if (selected) setInput(getLabel(selected));
+  }, [value]);
+  const filtered = input
+    ? items.filter(i => getLabel(i).toLowerCase().includes(input.toLowerCase()))
+    : items;
+  return (
+    <div style={{ position: 'relative' }}>
+      <input
+        type="text"
+        value={input}
+        placeholder={placeholder}
+        style={{ width: '100%', padding: '10px 14px', border: '2px solid #e0e0e0', borderRadius: '8px', fontSize: '14px', background: 'white' }}
+        onFocus={() => setShow(true)}
+        onChange={e => {
+          setInput(e.target.value);
+          setShow(true);
+          onChange('');
+        }}
+      />
+      {show && filtered.length > 0 && (
+        <div style={{
+          position: 'absolute',
+          zIndex: 10,
+          background: 'white',
+          border: '1px solid #e2e8f0',
+          borderRadius: '8px',
+          width: '100%',
+          maxHeight: 180,
+          overflowY: 'auto',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+        }}>
+          {filtered.map(i => (
+            <div
+              key={i[idKey]}
+              style={{ padding: 10, cursor: 'pointer', background: String(i[idKey]) === String(value) ? '#e9d8fd' : 'white' }}
+              onMouseDown={() => {
+                setInput(getLabel(i));
+                setShow(false);
+                onChange(i[idKey]);
+              }}
+            >
+              {getLabel(i)}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Prestamos() {
   const [prestamos, setPrestamos] = useState([])
   const [socios, setSocios] = useState([])
@@ -157,6 +212,7 @@ export default function Prestamos() {
               ))}
             </select>
           </div>
+
           <div>
             <label style={{ fontSize: '12px', color: '#718096', display: 'block', marginBottom: '4px' }}>
               Fecha de Inicio
